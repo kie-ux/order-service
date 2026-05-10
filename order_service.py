@@ -89,10 +89,18 @@ def get_orders():
         ET.SubElement(response, 'Error').text = str(e)
         return Response(ET.tostring(response), mimetype='application/xml')
 
+def safe_parse(content):
+    if isinstance(content, bytes):
+        content = content.decode('utf-8', errors='ignore')
+    content = content.strip()
+    if content.startswith('<?xml'):
+        content = content[content.index('?>') + 2:].strip()
+    return ET.fromstring(content)
+
 @app.route('/place_order', methods=['POST'])
 def place_order():
     try:
-        root         = ET.fromstring(request.data)
+        root         = safe_parse(request.data)
         product_name = root.find('ProductName').text
         quantity     = int(root.find('Quantity').text)
 
@@ -116,7 +124,7 @@ def place_order():
             data=request.data,
             headers={'Content-Type': 'application/xml'}
         )
-        inv_root   = ET.fromstring(inventory_response.content)
+        inv_root   = safe_parse(inventory_response.content)
         inv_status = inv_root.find('Status')
 
         if inv_status is None or inv_status.text != 'Success':
@@ -132,7 +140,7 @@ def place_order():
             data=ET.tostring(payment_xml),
             headers={'Content-Type': 'application/xml'}
         )
-        pay_root   = ET.fromstring(payment_response.content)
+        pay_root   = safe_parse(payment_response.content)
         pay_status = pay_root.find('Status')
 
         if pay_status is None or pay_status.text != 'Success':
