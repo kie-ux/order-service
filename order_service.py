@@ -95,6 +95,8 @@ def safe_parse(content):
     content = content.strip()
     if content.startswith('<?xml'):
         content = content[content.index('?>') + 2:].strip()
+    if content.startswith('<html') or content.startswith('<!DOCTYPE'):
+        raise Exception('Service returned an error page. Please try again.')
     return ET.fromstring(content)
 
 @app.route('/place_order', methods=['POST'])
